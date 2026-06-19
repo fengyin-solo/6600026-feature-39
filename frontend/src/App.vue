@@ -11,6 +11,7 @@ const gcWindowSize = ref(50);
 const newSeqName = ref('');
 const newSeqData = ref('');
 const isBuildingTree = ref(false);
+const expandedSeqId = ref<string | null>(null);
 
 onMounted(() => {
   store.loadMockSequences();
@@ -51,6 +52,10 @@ function handleAddSequence() {
   store.addSequence(id, newSeqName.value.trim(), newSeqData.value.trim());
   newSeqName.value = '';
   newSeqData.value = '';
+}
+
+function toggleDetail(id: string) {
+  expandedSeqId.value = expandedSeqId.value === id ? null : id;
 }
 
 function handleLoadMock() {
@@ -113,29 +118,65 @@ function handleLoadMock() {
 
         <!-- Sequence table -->
         <div class="max-h-48 overflow-auto">
-          <table class="w-full text-sm">
+          <table class="w-full text-sm table-fixed">
             <thead class="bg-gray-800 sticky top-0">
               <tr class="text-gray-400 text-left">
-                <th class="px-4 py-1.5 font-medium">ID</th>
+                <th class="px-4 py-1.5 font-medium w-28">ID</th>
                 <th class="px-4 py-1.5 font-medium">名称</th>
                 <th class="px-4 py-1.5 font-medium w-20">长度</th>
-                <th class="px-4 py-1.5 font-medium w-16">操作</th>
+                <th class="px-4 py-1.5 font-medium w-24">操作</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="seq in store.sequences" :key="seq.id" class="border-t border-gray-700 hover:bg-gray-800/50">
-                <td class="px-4 py-1.5 text-cyan-400 font-mono text-xs">{{ seq.id }}</td>
-                <td class="px-4 py-1.5 text-gray-200">{{ seq.name }}</td>
-                <td class="px-4 py-1.5 text-gray-400">{{ seq.data.length }} bp</td>
-                <td class="px-4 py-1.5">
-                  <button
-                    @click="store.removeSequence(seq.id)"
-                    class="text-red-400 hover:text-red-300 text-xs"
-                  >
-                    删除
-                  </button>
-                </td>
-              </tr>
+              <template v-for="seq in store.sequences" :key="seq.id">
+                <tr class="border-t border-gray-700 hover:bg-gray-800/50">
+                  <td class="px-4 py-1.5">
+                    <div class="text-cyan-400 font-mono text-xs truncate" :title="seq.id">{{ seq.id }}</div>
+                  </td>
+                  <td class="px-4 py-1.5">
+                    <div class="text-gray-200 truncate" :title="seq.name">{{ seq.name }}</div>
+                  </td>
+                  <td class="px-4 py-1.5 text-gray-400">{{ seq.data.length }} bp</td>
+                  <td class="px-4 py-1.5">
+                    <div class="flex items-center gap-3">
+                      <button
+                        @click="toggleDetail(seq.id)"
+                        class="text-emerald-400 hover:text-emerald-300 text-xs"
+                      >
+                        {{ expandedSeqId === seq.id ? '收起' : '详情' }}
+                      </button>
+                      <button
+                        @click="store.removeSequence(seq.id)"
+                        class="text-red-400 hover:text-red-300 text-xs"
+                      >
+                        删除
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="expandedSeqId === seq.id">
+                  <td colspan="4" class="px-4 py-3 border-t border-gray-700" style="background-color: #1a2234;">
+                    <div class="space-y-2 text-xs">
+                      <div class="flex gap-2">
+                        <span class="text-gray-500 w-16 shrink-0">完整名称</span>
+                        <span class="text-gray-200 break-all">{{ seq.name }}</span>
+                      </div>
+                      <div class="flex gap-2">
+                        <span class="text-gray-500 w-16 shrink-0">序列 ID</span>
+                        <span class="text-cyan-400 font-mono break-all">{{ seq.id }}</span>
+                      </div>
+                      <div class="flex gap-2">
+                        <span class="text-gray-500 w-16 shrink-0">长度</span>
+                        <span class="text-gray-300">{{ seq.data.length }} bp</span>
+                      </div>
+                      <div class="flex gap-2">
+                        <span class="text-gray-500 w-16 shrink-0">序列数据</span>
+                        <pre class="text-gray-200 font-mono whitespace-pre-wrap break-all max-h-32 overflow-auto flex-1 bg-gray-900 rounded p-2 border border-gray-700">{{ seq.data }}</pre>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
               <tr v-if="store.sequences.length === 0">
                 <td colspan="4" class="px-4 py-6 text-center text-gray-500 text-sm">
                   暂无序列 — 点击"加载示例序列"添加
